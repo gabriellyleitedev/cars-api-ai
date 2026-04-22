@@ -1,0 +1,1 @@
+export * from "./cars.js"; // exporta todos os arquivos da pasta cars.ts
