@@ -1,4 +1,13 @@
-node_modules
+# Dependências
+node_modules/
+
+# Build
+dist/
+
+# Env (Segurança)
 .env
-dist
-drizzle
+.env.local
+
+# Logs e Cache
+*.log
+.eslintcache
