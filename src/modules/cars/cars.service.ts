@@ -1,9 +1,10 @@
 import type { CarsRepository } from "./cars.repository.js";
 import type { CreateCarInput, SearchCarsRequestInput } from "./cars.schema.js";
+import type { AiSearchAgentService } from "./search/ai-search-agent.service.js";
 
 // Service chama o repository 
 export class CarsService {
-    constructor(private readonly repository: CarsRepository) {}
+    constructor(private readonly repository: CarsRepository, private readonly aisearchAgent: AiSearchAgentService) { }
 
     async createCar(input: CreateCarInput) {
         const created = await this.repository.createCar(input);
@@ -11,7 +12,7 @@ export class CarsService {
     }
 
     async searchCars(input: SearchCarsRequestInput) {
-        // TODO: Implement search logic with repository
-        return [];
+        const resul = await this.aisearchAgent.run(input.search);
+        return resul;
     }
 }

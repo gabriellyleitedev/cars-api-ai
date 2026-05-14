@@ -2,7 +2,7 @@
 
 ## Introdução
 
-Este projeto é um backend desenvolvido em Node.js com TypeScript, utilizando o framework Fastify para criar uma API RESTful. O objetivo principal é gerenciar dados de carros, com funcionalidades de criação de registros. A arquitetura segue um padrão modular, separando responsabilidades em camadas distintas para facilitar a manutenção e escalabilidade.
+Este projeto é um backend desenvolvido em Node.js com TypeScript, utilizando o framework Fastify para criar uma API RESTful. O objetivo principal é gerenciar dados de carros, com funcionalidades de criação de registros e busca por texto natural. A arquitetura segue um padrão modular, separando responsabilidades em camadas distintas para facilitar a manutenção e escalabilidade.
 
 ## Tecnologias Utilizadas
 
@@ -122,30 +122,51 @@ O módulo "cars" é responsável por gerenciar os dados de carros. Segue a arqui
 #### Repository (cars.repository.ts)
 - Classe `CarsRepository` que interage com o banco via Drizzle.
 - Método `createCar`: Insere um novo carro na tabela e retorna o registro criado.
-- Trata erros se a inserção falhar.
+- Método `searchfilterCars`: Executa buscas com filtros e retorna os resultados ordenados por data de criação.
+- Caso `imageUrl` não seja fornecido, o campo é gravado como string vazia no banco.
 
 #### Service (cars.service.ts)
 - Classe `CarsService` que contém a lógica de negócio.
 - Método `createCar`: Chama o repository para criar o carro.
-- Pode ser expandido para incluir validações adicionais ou lógica complexa.
+- Método `searchCars`: Chama o agente de busca por IA para interpretar a query de texto e executar a pesquisa.
 
 #### Controller (cars.controller.ts)
 - Classe `CarsController` que recebe as requisições HTTP.
 - Método `createCar`: Valida o corpo da requisição com o schema Zod, chama o service e retorna a resposta.
-- Retorna status 200 com o carro criado.
+- Método `searchCars`: Valida o corpo com `searchRequestSchema` e retorna os resultados de busca.
 
 #### Routes (cars.routes.ts)
 - Função `carsRoutes` que registra as rotas no Fastify.
-- Rota POST `/cars`: Conecta à função `createCar` do controller.
-- Instancia as dependências (repository, service, controller) dentro da função para isolamento.
+- Rota `POST /cars`: Conecta à função `createCar` do controller.
+- Rota `POST /cars/search`: Conecta à função `searchCars` do controller.
+- Instancia as dependências (repository, aiSearchAgent, service, controller) dentro da função para isolamento.
+
+### Busca por texto com IA
+
+- `AiSearchAgentService` envia a mensagem do usuário para o modelo OpenAI configurado.
+- O agente utiliza `tool_calls` para extrair filtros estruturados de busca.
+- Filtros como `marca`, `nome` e `versao` são convertidos para busca parcial com `ilike`.
+- A busca interna é feita pela combinação de filtros em `cars.brand`, `cars.model` e `cars.version`.
+- Retorna os itens encontrados e uma resposta natural sobre a quantidade de resultados.
 
 ### Fluxo de Funcionamento
-1. **Requisição**: Cliente faz POST para `/cars` com dados JSON.
-2. **Rota**: `cars.routes.ts` direciona para `controller.createCar`.
-3. **Controller**: Valida dados com Zod, chama `service.createCar`.
-4. **Service**: Chama `repository.createCar`.
-5. **Repository**: Insere no banco via Drizzle e retorna o resultado.
-6. **Resposta**: Controller retorna o carro criado com status 200.
+1. **Requisição**: Cliente faz POST para `/cars` com dados JSON ou POST para `/cars/search` com `{ search: string }`.
+2. **Rota**: `cars.routes.ts` direciona para o controller correspondente.
+3. **Controller**: Valida dados com Zod, chama o service adequado.
+4. **Service**: Cria carro ou chama o agente de busca.
+5. **Repository**: Insere no banco ou executa a consulta filtrada no banco.
+6. **Resposta**: Controller retorna o resultado com status 200.
+
+## Rotas Principais
+
+- `GET /teste`
+  - Retorna um objeto simples de status para checar o servidor.
+- `POST /cars`
+  - Cria um novo carro.
+  - Body esperado: `brand`, `model`, `version`, `year`, `price`, `fuel`, `transmission`, `mileage`, `imageUrl?`.
+- `POST /cars/search`
+  - Busca carros usando uma query de texto livre.
+  - Body esperado: `{ search: string }`.
 
 ## Inicialização e Execução
 

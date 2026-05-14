@@ -1,6 +1,8 @@
+import { desc } from "drizzle-orm";
 import { db } from "../../db/client.js";
 import { cars } from "../../db/schema/cars.js";
-import type { CreateCarInput } from "./cars.schema.js"; // avisa ao type quais campos são obrigatórios (marca, modelo)
+import type { CreateCarInput, SearchFilters } from "./cars.schema.js"; // avisa ao type quais campos são obrigatórios (marca, modelo)
+import { buildSearchQueryParts } from "./search/search-query-builder.js";
 
 export class CarsRepository {
     async createCar(data: CreateCarInput) {
@@ -10,7 +12,7 @@ export class CarsRepository {
                 brand: data.brand,
                 model: data.model,
                 version: data.version,
-                year: data.year, 
+                year: data.year,
                 price: data.price.toFixed(2),
                 fuel: data.fuel,
                 transmission: data.transmission,
@@ -23,5 +25,19 @@ export class CarsRepository {
             throw new Error("ERROO AO CADASTRAR O CARRO");
         }
         return row;
+    }
+
+    async searchfilterCars(params: { filters: SearchFilters }) {
+        const queryParts = buildSearchQueryParts(params.filters);
+
+        let itemsQuery = db.select().from(cars).$dynamic();
+
+        if (queryParts.where) {
+            itemsQuery = itemsQuery.where(queryParts.where);
+        }
+
+        const items = await itemsQuery.orderBy(desc(cars.createdAt));
+
+        return { items };
     }
 }
